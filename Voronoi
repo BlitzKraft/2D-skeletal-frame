@@ -5,6 +5,8 @@ import toxi.util.datatypes.*;
 import toxi.processing.*;
 import toxi.geom.mesh.*;
 import toxi.geom.mesh.subdiv.*;
+import toxi.volume.*;
+import toxi.color.*;
 
 // ranges for x/y positions of points
 FloatRange xpos, ypos;
@@ -24,10 +26,18 @@ boolean doShowDelaunay;
 boolean doShowHelp=true;
 boolean doClip;
 boolean doSave;
-TriangleMesh mesh = new TriangleMesh();
+
+int VOX_RES=64;
+int VOX_STR=7;
+
+VolumetricBrush brushbk;
+
+WETriangleMesh mesh = new WETriangleMesh();
+PGraphics pg;
+
 
 void setup() {
-  size(600, 600);
+  size(600, 600, P3D);
   smooth();
   // focus x positions around horizontal center (w/ 33% standard deviation)
   xpos=new BiasedFloatRange(0, mouseX, width/2, 0.333f);
@@ -37,6 +47,7 @@ void setup() {
   clip=new SutherlandHodgemanClipper(new Rect(width*0.125, height*0.125, width*0.75, height*0.75));
   gfx = new ToxiclibsSupport(this);
   textFont(createFont("SansSerif", 10));
+  
 }
 
 void draw() {
@@ -113,12 +124,18 @@ void keyPressed() {
   case 'b':
     for (Triangle2D t: voronoi.getTriangles()) {
       mesh.addFace(t.a.to3DXY(), t.b.to3DXY(), t.c.to3DXY());
-      mesh.saveAsSTL("test.stl");
+      mesh=MeshLatticeBuilder.build(mesh, VOX_RES, VOX_STR);
+        for (int i=0; i<6; i++) {
+    new LaplacianSmooth().filter(mesh, 1);
+  }
+      gfx.mesh(mesh);
+      //TriangleMesh save=(TriangleMesh)mesh;
+      //save.saveAsSTL("test-plane.stl");
     }
-    
+
     break;
   }
-}
+} 
 
 void mousePressed() {
   voronoi.addPoint(new Vec2D(mouseX, mouseY));
